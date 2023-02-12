@@ -6,8 +6,14 @@ import save_image
 from diff import *
 
 class human_tracking:
-    def __init__(self):
-        self.ser = serial.Serial('com5', 9600)
+    def __init__(self, port = None, baudrate = None, servo = None):
+        self.port = port
+        self.baudrate = baudrate
+        self.servo = servo
+        if self.port is None and self.baudrate is None:
+            self.ser = None
+        else:
+            self.ser = serial.Serial(port, baudrate)
         time.sleep(2)
         self.mpPose = mp.solutions.pose
         self.mpDraw = mp.solutions.drawing_utils
@@ -18,7 +24,9 @@ class human_tracking:
         self.image1 = None
         self.image2 = self.cap.read()[1]
         self.flag = 0
-        pTime = 0
+        self.pTime = 0
+        self.cTime = 0
+
 
     def newfun(self):
         while True:
@@ -29,6 +37,7 @@ class human_tracking:
         imgRGB = cv2.cvtColor(img,cv2.COLOR_BGR2RGB)
         result = self.pose.process(imgRGB)
         self.old_state = self.new_state
+
         if result.pose_landmarks:
             self.new_state = 1 #This is when human detect
 
@@ -53,47 +62,78 @@ class human_tracking:
             h, w, c = img.shape
             xcenter = w/2;
             ycenter = h/2;
-            if xavg > xcenter+50:
-                self.ser.write('2'.encode('utf-8'))
-                print('sent 2')
+            if self.port:
+                if xavg > xcenter+50:
+                    self.ser.write('d'.encode('utf-8'))
+                    print('sent 2')
 
-            if xavg < xcenter - 50:
-                self.ser.write('1'.encode('utf-8'))
-                print('sent 1')
+                if xavg < xcenter - 50:
+                    self.ser.write('i'.encode('utf-8'))
+                    print('sent 1')
 
-            if yavg > ycenter + 50:
-                self.ser.write('3'.encode('utf-8'))
-                print('sent 3')
+                if yavg > ycenter + 50:
+                    self.ser.write('3'.encode('utf-8'))
+                    print('sent 3')
 
-            if yavg < ycenter - 50:
-                self.ser.write('4'.encode('utf-8'))
-                print('sent 4')
+                if yavg < ycenter - 50:
+                    self.ser.write('4'.encode('utf-8'))
+                    print('sent 4')
         else:
             self.new_state = 0
 
-        if self.new_state - self.old_state == 0:
-            print("no change")
+        #if self.new_state - self.old_state == 0:
+            #print("no change")
+        if self.new_state == 1:
+            self.pTime = 0
 
         if self.new_state - self.old_state == 1:
             print("human coming")
             self.image1 = self.image2
             self.image2 = img
+
         if self.new_state - self.old_state == -1:
             print("human leaving")
             self.image1 = self.image2
             self.image2 = img
-            self.flag = 1
+            if self.port == None:
+                self.flag = 1
+            self.pTime = time.time()
 
-        if self.flag == 1:
+        if self.flag == 1:   #control extract item function
+            self.cTime = time.time()
+            if (self.cTime - self.pTime) > 2 and self.pTime != 0 and self.port == None:
+                extractItem(path, self.image1, self.image2)
+                self.flag = 0
+                self.pTime = 0
+                print("extracting")
+
+        self.cTime = time.time()
+        #print("current time")
+        #print(self.cTime)
+        #print("leave time")
+        #print(self.pTime)
+
+        if (self.cTime - self.pTime) > 3 and self.pTime != 0 and self.port: #send back to origin command to arduino after human leave 3 sec
+            print("back to origin")
+            self.ser.write('o'.encode('utf-8'))
+            time.sleep(5)
             extractItem(path, self.image1, self.image2)
             self.flag = 0
-            print("ectracing")
+            self.pTime = 0
+            print('servo extracted')
+            print(self.image1)
+            print('image2')
+            print(self.image2)
+
 
         cv2.imshow("image",img)
         cv2.waitKey(1)
 
+
+
     def Move_to_Origin(self):
-        self.ser.write('5'.encode('utf-8'))
+        self.ser.write('o'.encode('utf-8'))
+        print("back to origin")
         time.sleep(5)
 
     #def return_img(self):
