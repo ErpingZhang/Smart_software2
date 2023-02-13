@@ -8,7 +8,7 @@ class Find_Window:
     def __init__(self, window, name):
         self.name = name
         self.find = tk.Toplevel(window)
-        self.Location_dir = "C:/Users/13090/Desktop/testing/location"
+        self.Location_dir = "C:/Users/tgw19/Desktop/test/location"
         self.label = Label()
         self.image_sort = 0
         self.image_flag = 0

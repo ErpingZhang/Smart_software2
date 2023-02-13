@@ -21,6 +21,15 @@ def mse(img1, img2):
    return mse
 
 
+def load_images_from_folder(folder):
+    images = []
+    for filename in os.listdir(folder):
+        img = cv2.imread(os.path.join(folder,filename))
+        if img is not None:
+            images.append(img)
+    return images
+
+
 def find_contour(img):
     thresh = cv2.threshold(img, 10, 255, cv2.THRESH_BINARY)[1]
     kernel = np.ones((7, 7), np.uint8)
@@ -50,36 +59,72 @@ def item_match(item, img):
             good.append([m])
 
     if len(good) >= 6:
+        '''
         # Draw first 10 matches.
         img3 = cv2.drawMatchesKnn(item, kp1, testImg, kp2, good, None,
                                   flags=cv2.DrawMatchesFlags_NOT_DRAW_SINGLE_POINTS)
         cv2.imshow("result", img3)
         cv2.waitKey(0)
         cv2.imwrite(os.path.join(path, "match1.jpg"), img3)
+        '''
+
+        return True
     else:
         print("object not found")
+        return False
 
-def extractItem(path, orimg1, orimg2):
+
+def item_comp(itemList1, itemList2,img_list,img):
+    first_range = len(itemList1)
+    second_range = len(itemList2)
+    if first_range == 0:
+        loc_list = [0 for x in range(second_range)]
+        for i in range(second_range):
+            itemList1.append(itemList2[i])
+            loc_list[i] = img_list[i]
+    elif second_range == 0:
+        loc_list = [0 for x in range(first_range)]
+        for i in range(first_range):
+            loc_list[i] = img
+    else:
+        loc_list = [0 for x in range(first_range)]
+        for i in range(second_range):
+            for j in range(first_range):
+                if item_match(itemList2[i],itemList1[j]):
+                    loc_list[j] = img_list[i]
+                    print("yes")
+                else:
+                    itemList1.append(itemList2[i])
+                    loc_list.append(img_list[i])
+    return itemList1, loc_list
+
+
+def extract_item(path, orimg1, orimg2):
     before_item = []
     current_item = []
+    img_list = []
     img1 = cv2.cvtColor(orimg1, cv2.COLOR_BGR2GRAY)
     img2 = cv2.cvtColor(orimg2, cv2.COLOR_BGR2GRAY)
     img1 = cv2.GaussianBlur(img1, (7, 7), 0)
     img2 = cv2.GaussianBlur(img2, (7, 7), 0)
     diff = cv2.absdiff(img2, img1)
-    thresh = cv2.threshold(diff, 5, 255, cv2.THRESH_BINARY)[1]
+
+    thresh = cv2.threshold(diff, 10, 255, cv2.THRESH_BINARY)[1]
+    
+    cv2.imwrite(path+'image3.jpg',diff)
     kernel = np.ones((9, 9), np.uint8)
     img_open = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
     img_close = cv2.morphologyEx(img_open, cv2.MORPH_CLOSE, kernel)
     #img_open = cv2.morphologyEx(img_close,cv2.MORPH_OPEN,kernel)
     img_Gaussian = cv2.GaussianBlur(img_close, (7, 7), 0)
-
+    cv2.imwrite(path+'image4.jpg',img_Gaussian)
     cnts, hierarchy = cv2.findContours(img_Gaussian.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     contours = []
     check = []
 
     for a in cnts:
-        if cv2.contourArea(a) > 5000:
+
+        if cv2.contourArea(a) > 3000:
             check.append(a)
     for b in check :
         flag = 0
@@ -100,28 +145,26 @@ def extractItem(path, orimg1, orimg2):
         item2 = orimg2[y:y + h, x:x + w]
         grey_item1 = cv2.cvtColor(item1, cv2.COLOR_BGR2GRAY)
         grey_item2 = cv2.cvtColor(item2, cv2.COLOR_BGR2GRAY)
-        item = cv2.absdiff(grey_item1,grey_item2)
-        '''
-          cv2.imshow("1", grey_item1)
-        cv2.imshow("2", grey_item2)
-        cv2.imshow("3", item)
-        cv2.waitKey(0)
-        
-        '''
-
-        score1, diff1 = compare_ssim(grey_item1, item, full=True)
-        score2, diff2 = compare_ssim(grey_item2, item, full=True)
+        item = cv2.absdiff(item1,item2)
+        score1, diff1 = compare_ssim(item1, item, multichannel=True, full=True, data_range=255)
+        score2, diff2 = compare_ssim(item2, item, multichannel=True, full=True, data_range=255)
+        print(score1,score2)
         #if mse(grey_item1,item) > mse(grey_item2,item):
         if score2 > score1:
-            cv2.rectangle(orimg1, (x, y), (x + w, y + h), (0, 0, 255), 2)
+            #cv2.rectangle(loc_image, (x, y), (x + w, y + h), (0, 0, 255), 2)
+            #cv2.imwrite(os.path.join(path, "r2.jpg"), item2)
             before_item.append(item1)
 
         else:
-            cv2.rectangle(orimg2, (x, y), (x + w, y + h), (0, 0, 255), 2)
-            frameStorage(path,1,item2,orimg2,'i')
+            #
+            #cv2.imwrite(os.path.join(path, "r1.jpg"), item1)
             current_item.append(item2)
+            loc_image = orimg2.copy()
+            cv2.rectangle(loc_image, (x, y), (x + w, y + h), (0, 0, 255), 2)
+            img_list.append(loc_image)
 
-        print(cv2.contourArea(c))
+
+        #print(cv2.contourArea(c))
         #cv2.rectangle(orimg2, (x, y), (x + w, y + h), (0, 0, 255), 2)
     '''
     print("SSIM: {}".format(score))
@@ -129,19 +172,23 @@ def extractItem(path, orimg1, orimg2):
     cv2.imshow("2",orimg1)
     cv2.imshow("3",orimg2)
     cv2.waitKey(0)
-    cv2.imwrite(os.path.join(path, r"\cap3.jpg"),item)
+    cv2.imwrite(os.path.join(path, "cap3.jpg"),item)
     '''
-    #cv2.imwrite((path + r"\cap3.jpg"),item)
-    return(before_item,current_item)
-
-# open selected photo
-
+    item_list, loc_list = item_comp(before_item, current_item, img_list, orimg2)
+    item_store(item_list, loc_list, path)
+    return()
 
 
-#item2 = extractItem(orimg1, orimg3)
-
-#testImg = cv2.imread(path + '\cap1.jpeg')
-
-
-
-
+def item_store(itemList, positionList, directory):
+    folder = directory + r'\item'
+    storedItem = load_images_from_folder(folder)
+    itemNum = len(storedItem)
+    itemListNum = len(itemList)
+    for i in range(itemListNum):
+        flag = 0
+        for j in range(itemNum):
+            if item_match(itemList[i],storedItem[j]):
+                frameStorage(directory,j,storedItem[j] , positionList[i], "u")
+                flag =1
+        if flag == 0:
+            frameStorage(directory, itemNum,itemList[i], positionList[i], "i")

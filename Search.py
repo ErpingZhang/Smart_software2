@@ -10,7 +10,7 @@ class Sear_Window:
     def __init__(self, window, inpu):
         self.window = window
         self.sear = tk.Toplevel(window)
-        self.Item_dir = "C:/Users/13090/Desktop/testing/Item"
+        self.Item_dir = "C:/Users/tgw19/Desktop/test/item"
         self.label = Label()
         self.image_sort = 0
         self.imge_list = []
@@ -26,9 +26,13 @@ class Sear_Window:
         for images in os.listdir(self.Item_dir):
             # check if the image ends with png
             comp_date = self.today + timedelta(days=self.date_sub)
+            print(images)
             image_name = os.path.splitext(self.Item_dir + "/" + images)
+            print(image_name)
             image_name = image_name[0].split("/")[len(image_name[0].split("/"))-1]
+            print(image_name)
             image_name = image_name.split("_")
+            print(image_name)
             image_date = date(int(image_name[1]), int(image_name[2]), int(image_name[3]))
             if image_date >= comp_date:
                 self.imge_list.append(images)

@@ -22,10 +22,9 @@ class Det_Window:
                 self.counter = counter
 
             def run(self):  # 把要执行的代码写到run函数里面 线程在创建后会直接运行run函数
-                path = r"C:\Users\13090\Desktop\testing"
-                createFolder(path)
-                tracking = human_tracking()
-
+                
+                tracking = human_tracking('com3',9600,1)
+                path = r"C:\Users\tgw19\Desktop\test"
                 while True:
                     human_tracking.begin_tracking(tracking, path)
                     key_pressed = cv2.waitKey(1) & 0xFF

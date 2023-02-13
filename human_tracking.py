@@ -22,7 +22,7 @@ class human_tracking:
         self.old_state = 0
         self.new_state = 0
         self.image1 = None
-        self.image2 = self.cap.read()[1]
+        self.image2 = None
         self.flag = 0
         self.pTime = 0
         self.cTime = 0
@@ -65,19 +65,19 @@ class human_tracking:
             if self.port:
                 if xavg > xcenter+50:
                     self.ser.write('d'.encode('utf-8'))
-                    print('sent 2')
+                    #print('sent d')
 
                 if xavg < xcenter - 50:
                     self.ser.write('i'.encode('utf-8'))
-                    print('sent 1')
+                    #print('sent i')
 
                 if yavg > ycenter + 50:
                     self.ser.write('3'.encode('utf-8'))
-                    print('sent 3')
+                    #print('sent 3')
 
                 if yavg < ycenter - 50:
                     self.ser.write('4'.encode('utf-8'))
-                    print('sent 4')
+                    #print('sent 4')
         else:
             self.new_state = 0
 
@@ -88,24 +88,24 @@ class human_tracking:
 
         if self.new_state - self.old_state == 1:
             print("human coming")
-            self.image1 = self.image2
-            self.image2 = img
+            #self.image1 = self.image2
+            #self.image2 = img
 
         if self.new_state - self.old_state == -1:
             print("human leaving")
-            self.image1 = self.image2
-            self.image2 = img
+            #time.sleep(2)
+            
             if self.port == None:
                 self.flag = 1
             self.pTime = time.time()
 
-        if self.flag == 1:   #control extract item function
-            self.cTime = time.time()
-            if (self.cTime - self.pTime) > 2 and self.pTime != 0 and self.port == None:
-                extractItem(path, self.image1, self.image2)
-                self.flag = 0
-                self.pTime = 0
-                print("extracting")
+        #if self.flag == 1:   #control extract item function
+            #self.cTime = time.time()
+            #if (self.cTime - self.pTime) > 2 and self.pTime != 0 and self.port == None:
+                #extract_item(path, self.image1, self.image2)
+                #self.flag = 0
+                #self.pTime = 0
+                #print("extracting")
 
         self.cTime = time.time()
         #print("current time")
@@ -117,13 +117,20 @@ class human_tracking:
             print("back to origin")
             self.ser.write('o'.encode('utf-8'))
             time.sleep(5)
-            extractItem(path, self.image1, self.image2)
-            self.flag = 0
+            self.image1 = self.image2
+            self.image2 = img
+            if self.flag > 0:
+                extract_item(path, self.image1, self.image2)
+                cv2.imwrite(path+'image1.jpg',self.image1)
+                cv2.imwrite(path+'image2.jpg',self.image2)
+            self.flag = self.flag +1
+            print(self.flag)
             self.pTime = 0
             print('servo extracted')
-            print(self.image1)
+            print('image1')
+            #print(self.image1)
             print('image2')
-            print(self.image2)
+            #print(self.image2)
 
 
         cv2.imshow("image",img)

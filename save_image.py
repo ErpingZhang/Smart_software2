@@ -3,7 +3,6 @@ import os
 import datetime
 import numpy
 
-
 img_item = numpy.empty(10, dtype=object)
 img_loca = numpy.empty(10, dtype=object)
 
@@ -38,22 +37,20 @@ def frameStorage(directory, itemNum, item, location, key):
     if key == 'i':
     # SPACE pressed
         path1 = directory + r'\item'
-        img_item[itemNum] = "item{}.png".format(itemNum)
+
+        img_item[itemNum] = "item{}".format(itemNum) + "{}.png".format(fileName)
+        rpath = os.path.join(path1, img_item[itemNum])
         cv2.imwrite(os.path.join(path1, img_item[itemNum]), item)
         print("{} written!".format(img_item[itemNum]))
-
         path2 = directory + r'\location'
-        img_loca[itemNum] = "item{}".format(itemNum) + "_" + "frame{}.png".format(fileName)
+        img_loca[itemNum] = "item{}.png".format(itemNum)
         cv2.imwrite(os.path.join(path2, img_loca[itemNum]), location)
         print("{} written!".format(img_loca[itemNum]))
     elif key == 'u':
         path2 = directory + r'\location'
-        rpath = os.path.join(path2, img_loca[itemNum])
-        os.remove(rpath)
-        img_loca[itemNum] = "item{}".format(itemNum) + "_" + "frame{}.png".format(fileName)
+        img_loca[itemNum] = "item{}.png".format(itemNum)
         cv2.imwrite(os.path.join(path2, img_loca[itemNum]), location)
         print("{} written!".format(img_loca[itemNum]))
-
 
 
 '''

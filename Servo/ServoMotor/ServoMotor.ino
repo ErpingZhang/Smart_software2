@@ -4,8 +4,8 @@ Servo myservo;  // create servo object to control a servo
 // twelve servo objects can be created on most boards
 
 int pos = 0;    // variable to store the servo position
-int waittime;
-int ang_per_step;
+int waittime=15;
+int ang_per_step=5;
 int origin_ang = 90;
 void setup() {
   myservo.attach(9);  // attaches the servo on pin 9 to the servo object
@@ -15,23 +15,33 @@ void setup() {
 
 void xincrease(){
   int current_ang = myservo.read();
-  if (current_ang > 180 - ang_per_step){
+  if (myservo.read()<180-ang_per_step){
+    if (current_ang > 180 - ang_per_step){
+      myservo.write(180);
+      delay(waittime);
+    }else{
+       myservo.write(current_ang + ang_per_step);
+       delay(waittime);
+    }
+  }else{
     myservo.write(180);
     delay(waittime);
-  }else{
-     myservo.write(current_ang + ang_per_step);
-     delay(waittime);
   }
 }
 
 void xdecrease(){
   int current_ang = myservo.read();
-  if (current_ang < 0 + ang_per_step){
+  if (current_ang > 0+ang_per_step){
+    if (current_ang < 0 + ang_per_step){
+      myservo.write(0);
+      delay(waittime);
+    }else{
+       myservo.write(current_ang - ang_per_step);
+       delay(waittime);
+    }
+  }else{
     myservo.write(0);
     delay(waittime);
-  }else{
-     myservo.write(current_ang - ang_per_step);
-     delay(waittime);
   }
 }
 
